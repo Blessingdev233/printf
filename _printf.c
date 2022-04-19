@@ -1,50 +1,49 @@
 #include "main.h"
 
 /**
- * _printf - prints formatted data to stdout
- * @format: string that contains the format to print
- * Return: number of characters written
+ *_printf - Print a formatted string
+ *@format: format string
+ *Return: number of characters printed
  */
-int _printf(char *format, ...)
+int _printf(const char *format, ...)
 {
-	int written = 0, (*structype)(char *, va_list);
-	char q[3];
-	va_list pa;
+	int count = 0;
+	va_list list;
+	char *pointer, *start;
+	param_func flags = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-	if (format == NULL)
+	va_start(list, format);
+
+	if (!format || (format[0] == '%' && !format[1]))
 		return (-1);
-	q[2] = '\0';
-	va_start(pa, format);
-	_putchar(-1);
-	while (format[0])
+	if (format[0] == '%' && format[1] == ' ' && !format[2])
+		return (-1);
+	for (pointer = (char *)format; *pointer; pointer++)
 	{
-		if (format[0] == '%')
+		init_params(&flags, list);
+		if (*pointer != '%')
 		{
-			structype = driver(format);
-			if (structype)
-			{
-				q[0] = '%';
-				q[1] = format[1];
-				written += structype(q, pa);
-			}
-			else if (format[1] != '\0')
-			{
-				written += _putchar('%');
-				written += _putchar(format[1]);
-			}
-			else
-			{
-				written += _putchar('%');
-				break;
-			}
-			format += 2;
+			count += _putchar(*pointer);
+			continue;
 		}
+		start = pointer;
+		pointer++;
+		while (get_flags(pointer, &flags))
+		{
+			pointer++;
+		}
+		pointer = get_width(pointer, &flags, list);
+		pointer = get_precision(pointer, &flags, list);
+		if (get_mods(pointer, &flags))
+			pointer++;
+
+		if (!func_parse(pointer))
+			count += print_range(start, pointer,
+			flags.l_mod || flags.h_mod ? pointer - 1 : 0);
 		else
-		{
-			written += _putchar(format[0]);
-			format++;
-		}
+			count += print_func(pointer, list, &flags);
 	}
-	_putchar(-2);
-	return (written);
+	_putchar(-1);
+	va_end(list);
+	return (count);
 }
